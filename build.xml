@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="protobuf-javascript" default="build">
+
+  <property file="build.properties"/>
+  
+  <target name="build" depends="build-java"/>
+  <target name="test" depends="test-java"/>
+  <target name="dist" depends="clean, build, test, javadoc, dist-javadoc, dist-jar"/>
+
+  <target name="build-java" depends="clean-java, compile-java-main, compile-java-test"/>
+  <target name="build-java-debug" depends="-set-java-debug, build-java"/>
+
+  <target name="-set-java-debug">
+    <property name="java.debug" value="true"/>
+  </target>
+
+  <target name="-check-java-debug" unless="java.debug">
+    <property name="java.debug" value="false"/>
+  </target>
+
+  <target name="compile-java-main" depends="-check-java-debug, compile-proto-javascript-options-java">
+    <mkdir dir="${build.java.dir}"/>
+    <javac destdir="${build.java.dir}" srcdir="${src.java.dir}" debug="${java.debug}" includeantruntime="false">
+      <src>
+        <pathelement location="${src.java.dir}"/>
+        <pathelement location="${gen-src.java.dir}"/>
+      </src>
+      <classpath>
+        <fileset dir="${lib.java.dir}"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="compile-java-test" depends="-check-java-debug">
+    <mkdir dir="${build.java.test.dir}"/>
+    <javac destdir="${build.java.test.dir}" srcdir="${src.java.test.dir}" debug="${java.debug}" includeantruntime="false">
+      <classpath>
+        <fileset dir="${lib.java.dir}"/>
+        <fileset dir="${lib.java.test.dir}"/>
+        <pathelement location="${build.java.dir}"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="clean" depends="clean-common">
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+  </target>
+
+  <target name="clean-common">
+    <delete dir="${temp.dir}"/>
+  </target>
+
+  <target name="clean-java" depends="clean-common">
+    <delete dir="${build.java.dir}"/>
+    <delete dir="${build.java.test.dir}"/>
+  </target>
+
+  <target name="dist-jar">
+    <jar destfile="${dist.dir}/${project.name}.jar">
+      <fileset dir="${build.java.dir}"/>
+      <manifest>
+        <attribute name="Specification-Version" value="${project.version}"/>
+        <attribute name="Specification-Title" value="${project.name}" />
+        <attribute name="Implementation-Version" value="${project.version}"/>
+        <attribute name="Implementation-Title" value="${project.name}" />
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="javadoc">
+    <javadoc
+            use="true" author="true"  version="true"
+            overview="overview.html"
+            access="package"
+            sourcepath="${src.java.dir}"
+            packagenames="*.*"
+            destdir="${build.javadoc.dir}"
+            windowtitle="${project.name} ${project.version}"
+            noqualifier="java.*:javax.*:com.sun.*"
+            linksource="true"
+            >
+      <classpath>
+        <fileset dir="${lib.java.dir}"/>
+      </classpath>
+      <link href="http://java.sun.com/javase/7/docs/api/"/>
+      <header><![CDATA[<h1>${project.name} ${project.version}</h1>]]></header>
+    </javadoc>
+  </target>
+
+  <target name="run-java" depends="-run-check-no-class">
+    <java classname="${classname}">
+      <classpath>
+        <fileset dir="${lib.java.dir}"/>
+        <pathelement location="${build.java.dir}"/>
+        <pathelement location="${resources.dir}"/>
+      </classpath>
+    </java>
+  </target>
+
+  <target name="-run-check-no-class" unless="classname">
+    <fail message="Must provide a main class via -Dclassname=com.example.YourClassHere"/>
+  </target>
+
+  <target name="dist-javadoc" depends="javadoc">
+    <zip destfile="${dist.dir}/${project.name}-javadocs.zip" duplicate="preserve">
+      <zipfileset dir="${build.javadoc.dir}"/>
+    </zip>
+  </target>
+
+  <target name="test-java" depends="build-java">
+    <junit haltonfailure="true">
+      <classpath>
+        <fileset dir="${lib.java.dir}"/>
+        <fileset dir="${lib.java.test.dir}"/>
+        <pathelement location="${build.java.dir}"/>
+        <pathelement location="${build.java.test.dir}"/>
+        <pathelement location="${resources.test.dir}"/>
+      </classpath>
+      <batchtest>
+        <fileset dir="${build.java.test.dir}">
+            <include name="**/Test*.class"/>
+            <include name="**/*Test.class"/>
+        </fileset>
+      </batchtest>
+      <formatter type="brief" usefile="no"/>
+    </junit>
+  </target>
+
+  <target name="clean-proto">
+    <delete dir="${build.proto.dir}"/>
+  </target>
+
+  <target name="-check-compile-proto-javascript-options-java">
+    <uptodate property="build.compileProtoExtensions.notRequired" targetfile="${gen-src.java.dir}/com/gotcake/protobuf/javascript/JavascriptOptionProtos.java" >
+      <srcfiles dir= "${src.proto.dir}" includes="javascript_options.proto"/>
+    </uptodate>
+  </target>
+
+  <target name="compile-proto-javascript-options-java" depends="-check-compile-proto-javascript-options-java" unless="build.compileProtoExtensions.notRequired">
+    <exec executable="protoc" failonerror="true">
+      <arg value="--proto_path=${lib.proto.dir}"/>
+      <arg value="--proto_path=${src.proto.dir}"/>
+      <arg value="--java_out=${gen-src.java.dir}"/>
+      <arg value="${src.proto.dir}/javascript_options.proto"/>
+    </exec>
+  </target>
+
+  <target name="compile-test-proto-closure" depends="build-java">
+    <java classname="com.gotcake.protobuf.javascript.Compiler" failonerror="true">
+      <classpath>
+        <fileset dir="${lib.java.dir}"/>
+        <pathelement location="${build.java.dir}"/>
+      </classpath>
+      <arg value="--input"/>
+      <arg value="${src.proto.test.dir}/**/*.proto"/>
+      <arg value="--searchDir"/>
+      <arg value="${src.proto.test.dir}"/>
+      <arg value="--outputDir"/>
+      <arg value="${test-output.closure.dir}"/>
+      <arg value="--debug"/>
+    </java>
+  </target>
+
+</project>

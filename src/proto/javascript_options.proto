@@ -1,0 +1,35 @@
+import "google/protobuf/descriptor.proto";
+
+package gotcake.protobuf;
+
+option java_package = "com.gotcake.protobuf.javascript";
+option java_outer_classname = "JavascriptOptionProtos";
+
+message JavascriptFileOptions {
+    optional string namespace = 1;
+}
+
+message JavascriptMessageOptions {
+    optional bool decode_support = 1;
+    optional bool encode_support = 2;
+    optional bool reflection_support = 3;
+}
+
+message JavascriptFieldOptions {
+    optional bool exclude = 1;
+    optional string exclude_value = 2;
+    optional bool int64_as_array_buffer = 3;
+    optional bool int64_as_string = 4;
+}
+
+extend google.protobuf.FileOptions {
+    optional JavascriptFileOptions js_file_options = 50001;
+}
+
+extend google.protobuf.MessageOptions {
+    optional JavascriptMessageOptions js_message_options = 50002;
+}
+
+extend google.protobuf.FieldOptions {
+    optional JavascriptFieldOptions js_field_options = 50003;
+}

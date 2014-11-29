@@ -1,0 +1,35 @@
+import "../proto/gotcake/protobuf/javascript_options.proto";
+
+package gotcake.protobuf;
+
+option (javascript).namespace = "gotcake";
+
+
+message Simple {
+
+    option (js_file_options).decode_support = true;
+    option (js_file_options).encode_support = true;
+
+    required int32 num = 1;
+    optional fixed32 fixed = 2 [(js_field_options).exclude=true];
+    optional int64 large_num = 3 [(js_field_options).int64_as_string=true];
+
+}
+
+message Foo {
+    option (js_message_options).decode_support = true;
+    message Bar {
+        // option (javascript_options).decode_support = true; // inherited
+        optional string baz = 1;
+        repeated float rating = 2;
+        repeated int32 packed = 3 [packed=true];
+    }
+    required Bar foobar = 1;
+    optional bytes thingy = 2;
+}
+
+enum MyEnum {
+    ONE = 1;
+    TWO = 2;
+    THREE = 3;
+}
