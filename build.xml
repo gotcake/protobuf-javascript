@@ -146,7 +146,11 @@
     </exec>
   </target>
 
-  <target name="compile-test-proto-closure" depends="build-java">
+  <target name="clean-test-output-closure">
+    <delete dir="${test-output.closure.dir}"/>
+  </target>
+
+  <target name="compile-test-proto-closure" depends="clean-test-output-closure, build-java">
     <java classname="com.gotcake.protobuf.javascript.Compiler" failonerror="true">
       <classpath>
         <fileset dir="${lib.java.dir}"/>
@@ -155,7 +159,9 @@
       <arg value="--input"/>
       <arg value="${src.proto.test.dir}/**/*.proto"/>
       <arg value="--searchDir"/>
+      <arg value="${src.proto.dir}"/>
       <arg value="${src.proto.test.dir}"/>
+      <arg value="${lib.proto.dir}"/>
       <arg value="--outputDir"/>
       <arg value="${test-output.closure.dir}"/>
       <arg value="--debug"/>

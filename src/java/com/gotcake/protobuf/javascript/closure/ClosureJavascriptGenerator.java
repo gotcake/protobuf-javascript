@@ -24,6 +24,7 @@
 
 package com.gotcake.protobuf.javascript.closure;
 
+import com.beust.jcommander.Parameter;
 import com.google.protobuf.DescriptorProtos;
 import com.gotcake.protobuf.javascript.JavascriptOptionProtos;
 import com.gotcake.protobuf.javascript.JavascriptGenerator;
@@ -31,6 +32,7 @@ import com.gotcake.protobuf.javascript.Utils;
 import com.gotcake.protobuf.javascript.builder.SectionBuffer;
 
 import java.io.*;
+import java.nio.file.Paths;
 import java.util.Map;
 
 /**
@@ -93,17 +95,6 @@ public class ClosureJavascriptGenerator implements JavascriptGenerator {
         }
 
     }
-
-    @Override
-    public String getRelativeOutputPathFor(DescriptorProtos.FileDescriptorProto protoFile) {
-        final String pkg = protoFile.getPackage();
-        if (pkg == null) {
-            return protoFile.getName().replace("_", "").toLowerCase() + ".js";
-        } else {
-            return pkg.replace(".", "/").toLowerCase() + "/" +  protoFile.getName().replace("_", "").toLowerCase() + ".js";
-        }
-    }
-
 
     /**
      * Write a message to the debug writer, if set

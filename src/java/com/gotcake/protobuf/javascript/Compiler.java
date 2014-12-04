@@ -34,7 +34,7 @@ import com.gotcake.protobuf.javascript.builder.SectionBuffer;
 import com.gotcake.protobuf.javascript.closure.ClosureJavascriptGenerator;
 
 import java.io.*;
-import java.nio.file.*;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -44,10 +44,10 @@ import java.util.*;
 public class Compiler {
 
     @Parameter(names = { "-i", "--input" }, variableArity = true, description = "Specify one or more input proto files.")
-    private ArrayList<String> inputFiles = new ArrayList<>();
+    private List<String> inputFiles = new ArrayList<>();
 
     @Parameter(names = { "-I", "--searchDir" }, variableArity = true, description = "Specify one or more search dirs for imported proto files.")
-    private ArrayList<String> searchDirs = new ArrayList<>();
+    private List<String> searchDirs = new ArrayList<>();
 
     @Parameter(names = { "-p", "--inputDescriptor" }, description = "Specify a files to read descriptors from.")
     private String inputDescriptor = null;
@@ -77,7 +77,7 @@ public class Compiler {
     private String outputFormat = ClosureJavascriptGenerator.class.getCanonicalName();
 
     @DynamicParameter(names = { "-E" }, description = "Specify an extra parameter for the output format. -Ekey=value")
-    private HashMap<String, String> extraArgs = new HashMap<>();
+    private Map<String, String> extraArgs = new HashMap<>();
 
     private OutputStream outputStream = null;
 
@@ -132,7 +132,9 @@ public class Compiler {
         JavascriptOptionProtos.registerAllExtensions(extensionRegistry);
 
         if (outputFile != null) {
-            outputStream = new FileOutputStream(outputFile);
+            final File f = new File(outputFile);
+            f.getParentFile().mkdirs();
+            outputStream = new FileOutputStream(f);
         } else if (stdout) {
             outputStream = System.out;
         } else if (!format.supportsMultipleOutputFiles()) {
@@ -153,8 +155,8 @@ public class Compiler {
     }
 
     private void compileProtoToDescriptor(final List<String> protoFiles, final List<String> searchDirs, final String outputFile) throws IOException {
-        final HashSet<Path> protoFileSet = new HashSet<>();
-        final HashSet<Path> searchDirSet = new HashSet<>();
+        final HashSet<String> protoFileSet = new HashSet<>();
+        final HashSet<String> searchDirSet = new HashSet<>();
         for (final String protoFile: protoFiles) {
             Utils.expandWildcardPath(protoFile, protoFileSet);
         }
@@ -163,12 +165,12 @@ public class Compiler {
         }
         final ArrayList<String> commandParts = new ArrayList<>();
         commandParts.add("protoc");
-        for (final Path searchDir: searchDirSet) {
-            commandParts.add("--proto_path="+searchDir.toString());
+        for (final String searchDir: searchDirSet) {
+            commandParts.add("--proto_path="+searchDir);
         }
         commandParts.add("--descriptor_set_out="+outputFile);
-        for (final Path protoFile: protoFileSet) {
-            commandParts.add(protoFile.toString());
+        for (final String protoFile: protoFileSet) {
+            commandParts.add(protoFile);
         }
         final ProcessBuilder builder = new ProcessBuilder(commandParts);
         final Process p = builder.inheritIO().start();
@@ -210,7 +212,9 @@ public class Compiler {
             for (final DescriptorProtos.FileDescriptorProto proto: descriptorSet.getFileList()) {
                 final SectionBuffer buffer = new SectionBuffer();
                 format.processProtoFile(proto, buffer);
-                final FileWriter writer = new FileWriter(outputDir + "/" + format.getRelativeOutputPathFor(proto));
+                final File outputFile = Paths.get(outputDir, getRelativeOutputPathFor(proto)).toFile();
+                outputFile.getParentFile().mkdirs();
+                final FileWriter writer = new FileWriter(outputFile);
                 buffer.writeTo(writer);
                 writer.flush();
                 writer.close();
@@ -231,6 +235,41 @@ public class Compiler {
 
     }
 
+    private static String getRelativeOutputPathFor(final DescriptorProtos.FileDescriptorProto protoFile) {
+
+        final JavascriptOptionProtos.JavascriptFileOptions options = protoFile.getOptions().getExtension(JavascriptOptionProtos.jsFileOptions);
+
+        String fileName = protoFile.getName().replaceFirst("\\.proto$", "");
+
+        int index = fileName.lastIndexOf(File.separator);
+        if (index > -1) {
+            fileName = fileName.substring(index+1);
+        }
+
+        String namespace = null;
+
+        if (protoFile.hasPackage()) {
+            namespace = protoFile.getPackage();
+        }
+
+        if (options.hasNamespace()) {
+            namespace = options.getNamespace();
+        }
+
+        fileName = fileName.replace("_", "").toLowerCase() + ".js";
+
+        if (namespace != null) {
+            final String[] pkgParts = namespace.split("\\.");
+            final String[] pkgPartsSub = new String[pkgParts.length];
+            System.arraycopy(pkgParts, 1, pkgPartsSub, 0, pkgParts.length - 1);
+            pkgPartsSub[pkgPartsSub.length - 1] = fileName;
+            return Paths.get(pkgParts[0], pkgPartsSub).toString();
+        } else {
+            return fileName;
+        }
+
+    }
+
     private static void pipeStream(final InputStream in, final OutputStream out) throws IOException {
         final byte[] buffer = new byte[1024];
         int n;
@@ -247,6 +286,7 @@ public class Compiler {
             final String errMsg = compiler.validateArgs();
             if (errMsg != null) {
                 System.err.println("ERROR: " + errMsg);
+                System.exit(1);
             } else if (compiler.help) {
                 commander.usage();
             } else {
@@ -276,6 +316,7 @@ public class Compiler {
             }
         } catch (ParameterException e) {
             System.err.println("ERROR: " + e.getMessage());
+            System.exit(1);
         }
     }
 

@@ -81,7 +81,6 @@ public class IndentedLineBuffer implements LineWritable {
 
     public IndentedLineBuffer line(final Object... values) throws IOException {
         write(values);
-        currentLine.append("\n");
         lines.add(currentLine.toString());
         currentLine.setLength(0);
         return this;
@@ -104,6 +103,7 @@ public class IndentedLineBuffer implements LineWritable {
     public void writeTo(final Writer writer) throws IOException {
         for (final String line: lines) {
             writer.write(line);
+            writer.write('\n');
         }
         if (currentLine.length() > 0) {
             writer.write(currentLine.toString());

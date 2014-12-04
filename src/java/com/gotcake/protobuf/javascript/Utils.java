@@ -29,10 +29,6 @@ import com.google.protobuf.WireFormat;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -159,8 +155,15 @@ public class Utils {
         return sb.toString();
     }
 
-    public static void expandWildcardPath(final String wildcardPath, final Set<Path> targetPathSet) throws IOException {
-        // TODO: Implement something that works here
+    public static void expandWildcardPath(final String wildcardPath, final Set<String> targetPathSet) throws IOException {
+        com.esotericsoftware.wildcard.Paths p = new com.esotericsoftware.wildcard. Paths();
+        p.glob("./", wildcardPath);
+        Iterator<File> iterator = p.fileIterator();
+        while (iterator.hasNext()) {
+            final File file = iterator.next();
+            if (file.exists())
+                targetPathSet.add(file.getCanonicalPath());
+        }
     }
 
 

@@ -44,6 +44,5 @@ public interface JavascriptGenerator {
 
     public void processProtoFile(final DescriptorProtos.FileDescriptorProto protoFile, final SectionBuffer outputBuffer) throws IOException;
 
-    public String getRelativeOutputPathFor(final DescriptorProtos.FileDescriptorProto protoFile);
 
 }
