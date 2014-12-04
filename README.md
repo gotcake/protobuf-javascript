@@ -6,22 +6,22 @@ If you're interested in this project, I'd love to hear about it, but the project
 after the v1.0 release.
 
 Google Protocol Buffers is an efficient data serialization format. It's used widely in many major companies and almost exclusively at Google
-as a replacement for JSON or XML to transport and store data between servers and native applications. It's not widely used
+as a replacement for JSON or XML to store and transport data between servers and native applications. Currently, it is not widely used
 in browsers because of a lack of an efficient, lightweight javascript implementation.
 
-This full project is available via GitHub at [https://github.com/gotcake/protobuf-javascript]
+This full project is available via GitHub at https://github.com/gotcake/protobuf-javascript
 
 ## Other Implementations
 Here is a list of all of the ones I am aware of. If one of them supports your particular use case better,
 I encourage you to use their implementation.
-* [https://code.google.com/p/protobuf-js]
-* [https://github.com/sirikata/protojs]
-* [https://github.com/dcodeIO/ProtoBuf.js]
-* [https://code.google.com/p/protobuf-for-node/]
+* https://code.google.com/p/protobuf-js
+* https://github.com/sirikata/protojs
+* https://github.com/dcodeIO/ProtoBuf.js
+* https://code.google.com/p/protobuf-for-node/
 
 ## Why protobuf-javscript?
 Other implementations either rely on a proto file definition at runtime and then use the information in that definition
-to encode or decode the data, which if inefficient and results in large library sizes and, or are only for node.js and rely on native plugins.
+to encode or decode the data, which is inefficient and results in large library sizes, or are only for node.js and rely on native plugins.
 
 Instead of relying on a definition at runtime, protobuf-javascript generates javascript code that inherently knows how to encode and
 decode the data. This results in a boost in efficiency and a significantly reduced library size because much of the encoding and
@@ -32,8 +32,8 @@ decoding logic is moved out of the runtime and into the compiler.
     * Encoding/Decoding
     * Validation
     * Data Types
-        * messages
-        * enums
+        * message
+        * enum
         * float32, float64
         * int32, uint32, sint32, fixed32
         * string
@@ -44,7 +44,7 @@ decoding logic is moved out of the runtime and into the compiler.
     * Reflection
     * Extensions
     * Data Types
-        * oneof
+        * oneof (maybe)
         * int64, uint64, sint64, fixed64
 * Version 3.0 and Beyond
     * AMD / non-closure support
