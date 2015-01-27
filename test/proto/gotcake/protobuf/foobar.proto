@@ -22,20 +22,31 @@
  * SOFTWARE.
  */
 
-import "gotcake/protobuf/javascript_options.proto";
+import "gotcake/protobuf/closure_options.proto";
 
 package gotcake.protobuf;
 
-option (js_file_options).namespace = "gotcake";
+option java_package = "com.gotcake.protobuf.javascript.protos";
+option java_outer_classname = "FooBarProtos";
 
+option (closure_options).namespace = "gotcake";
 
 message FooBar {
 
-    option (js_message_options).decode_support = true;
-    option (js_message_options).encode_support = true;
-
-    required int32 num = 1;
-    optional fixed32 fixed = 2 [(js_field_options).exclude=true];
-    optional int64 large_num = 3 [(js_field_options).int64_as_string=true];
+    repeated int32 int_32 = 1;
+    repeated fixed32 fixed_32 = 2;
+    repeated int64 int_64 = 3;
+    repeated bool flag = 4;
+    repeated string strings = 5;
+    repeated bytes rawbytes = 6;
+    repeated sfixed32 sfixed_32 = 7;
+    repeated uint32 uint_32 = 8;
+    repeated fixed64 fixed_64 = 9;
+    repeated sfixed64 sfixed_64 = 10;
+    repeated uint64 uint_64 = 11;
+    repeated sint32 sint_32 = 12;
+    repeated sint64 sint_64 = 13;
+    repeated float float32 = 14;
+    repeated double float64 = 15;
 
 }

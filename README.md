@@ -1,15 +1,13 @@
 # Overview
 Protobuf-javascript is a javascript code generator for [Google Protocol Buffers](https://developers.google.com/protocol-buffers/).
 
-The project is currently in very early stages of development and isn't yet functional.
-If you're interested in this project, I'd love to hear about it, but the project will not be open to other developers until
-after the v1.0 release.
+The project is currently in the very early stages of development and isn't yet functional.
+If you're interested in this project I'd love to hear about you may use it, or if you'd like to help there are a number
+of ways in which you can [contribute](#contribute).
 
 Google Protocol Buffers is an efficient data serialization format. It's used widely in many major companies and almost exclusively at Google
 as a replacement for JSON or XML to store and transport data between servers and native applications. Currently, it is not widely used
 in browsers because of a lack of an efficient, lightweight javascript implementation.
-
-This full project is available via GitHub at https://github.com/gotcake/protobuf-javascript
 
 ## Other Implementations
 Here is a list of all of the ones I am aware of. If one of them supports your particular use case better,
@@ -35,7 +33,7 @@ decoding logic is moved out of the runtime and into the compiler.
         * message
         * enum
         * float32, float64
-        * int32, uint32, sint32, fixed32
+        * int32, uint32, sint32, fixed32, sfixed32
         * string
         * bytes
     * Proto option extensions for configuring generator output
@@ -45,13 +43,19 @@ decoding logic is moved out of the runtime and into the compiler.
     * Extensions
     * Data Types
         * oneof (maybe)
-        * int64, uint64, sint64, fixed64
+        * int64, uint64, sint64, fixed64, sfixed64
 * Version 3.0 and Beyond
-    * AMD / non-closure support
+    * AMD / Node.js / non-closure support
 * Not Targeted
     * Services
-    * Dynamic (runtime) extensions
+    * Runtime registry of extensions
 
 ## Browser Dependencies
 The implementation relies on the HTML5 ArrayBuffer and DataView. A shim must be provided for older browsers which do not support these standards.
 
+## Contribute
+There are a number of ways you can help contribute to this project including:
+* Testing and test automation
+* Developing new features or language support
+* Fixing bugs
+* Documentation/Wikis

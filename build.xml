@@ -3,22 +3,16 @@
 
   <property file="build.properties"/>
   
-  <target name="build" depends="build-java"/>
-  <target name="test" depends="test-java"/>
+  <target name="build" depends="-check-build-up-to-date, build-java, compile-test-proto-closure" unless="build.up_to_date">
+    <mkdir dir="${build.dir}"/>
+    <touch file="${build.dir}/.build"/>
+  </target>
+  <target name="test" depends="test-java, test-closure-web"/>
   <target name="dist" depends="clean, build, test, javadoc, dist-javadoc, dist-jar"/>
 
-  <target name="build-java" depends="clean-java, compile-java-main, compile-java-test"/>
-  <target name="build-java-debug" depends="-set-java-debug, build-java"/>
+  <target name="build-java" depends="clean-java, compile-java-main, compile-java-test" unless="build.up_to_date"/>
 
-  <target name="-set-java-debug">
-    <property name="java.debug" value="true"/>
-  </target>
-
-  <target name="-check-java-debug" unless="java.debug">
-    <property name="java.debug" value="false"/>
-  </target>
-
-  <target name="compile-java-main" depends="-check-java-debug, compile-proto-javascript-options-java">
+  <target name="compile-java-main" depends="compile-proto-options-java" unless="build.up_to_date">
     <mkdir dir="${build.java.dir}"/>
     <javac destdir="${build.java.dir}" srcdir="${src.java.dir}" debug="${java.debug}" includeantruntime="false">
       <src>
@@ -31,9 +25,13 @@
     </javac>
   </target>
 
-  <target name="compile-java-test" depends="-check-java-debug">
+  <target name="compile-java-test" depends="compile-test-proto-java" unless="build.up_to_date">
     <mkdir dir="${build.java.test.dir}"/>
-    <javac destdir="${build.java.test.dir}" srcdir="${src.java.test.dir}" debug="${java.debug}" includeantruntime="false">
+    <javac destdir="${build.java.test.dir}" debug="${java.debug}" includeantruntime="false">
+      <src>
+        <pathelement location="${gen-src.java.test.dir}"/>
+        <pathelement location="${src.java.test.dir}"/>
+      </src>
       <classpath>
         <fileset dir="${lib.java.dir}"/>
         <fileset dir="${lib.java.test.dir}"/>
@@ -42,7 +40,9 @@
     </javac>
   </target>
 
-  <target name="clean" depends="clean-common">
+  <target name="clean-all" depends="clean, clean-web"/>
+
+  <target name="clean" depends="clean-common" unless="build.up_to_date">
     <delete dir="${build.dir}"/>
     <delete dir="${dist.dir}"/>
   </target>
@@ -51,7 +51,7 @@
     <delete dir="${temp.dir}"/>
   </target>
 
-  <target name="clean-java" depends="clean-common">
+  <target name="clean-java" depends="clean-common" unless="build.up_to_date">
     <delete dir="${build.java.dir}"/>
     <delete dir="${build.java.test.dir}"/>
   </target>
@@ -108,7 +108,7 @@
     </zip>
   </target>
 
-  <target name="test-java" depends="build-java">
+  <target name="test-java" depends="build">
     <junit haltonfailure="true">
       <classpath>
         <fileset dir="${lib.java.dir}"/>
@@ -131,27 +131,37 @@
     <delete dir="${build.proto.dir}"/>
   </target>
 
-  <target name="-check-compile-proto-javascript-options-java">
-    <uptodate property="build.compileProtoExtensions.notRequired" targetfile="${gen-src.java.dir}/com/gotcake/protobuf/javascript/JavascriptOptionProtos.java" >
-      <srcfiles dir= "${src.proto.dir}" includes="javascript_options.proto"/>
+  <target name="-check-compile-proto-options-java">
+    <uptodate property="build.compileProtoExtensions.notRequired" targetfile="${build.dir}/.proto_options_build" >
+      <srcfiles dir= "${src.proto.dir}" includes="**/*.proto"/>
     </uptodate>
   </target>
 
-  <target name="compile-proto-javascript-options-java" depends="-check-compile-proto-javascript-options-java" unless="build.compileProtoExtensions.notRequired">
+  <target name="compile-proto-options-java" depends="-check-compile-proto-options-java, clean-proto-options-java" unless="build.compileProtoExtensions.notRequired">
+    <mkdir dir="${gen-src.java.dir}"/>
+    <!-- we use protoc directly here to avoid a circular dependency with the Compiler -->
     <exec executable="protoc" failonerror="true">
       <arg value="--proto_path=${lib.proto.dir}"/>
       <arg value="--proto_path=${src.proto.dir}"/>
       <arg value="--java_out=${gen-src.java.dir}"/>
-      <arg value="${src.proto.dir}/javascript_options.proto"/>
+      <!-- manually add other files here -->
+      <arg value="${src.proto.dir}/gotcake/protobuf/closure_options.proto"/>
     </exec>
+    <mkdir dir="${build.dir}"/>
+    <touch file="${build.dir}/.proto_options_build"/>
   </target>
 
-  <target name="clean-test-output-closure">
-    <delete dir="${test-output.closure.dir}"/>
+  <target name="clean-proto-options-java" unless="build.compileProtoExtensions.notRequired">
+    <delete dir="${gen-src.java.dir}"/>
+    <delete file="${build.dir}/.proto_options_build"/>
   </target>
 
-  <target name="compile-test-proto-closure" depends="clean-test-output-closure, build-java">
-    <java classname="com.gotcake.protobuf.javascript.Compiler" failonerror="true">
+  <target name="clean-test-output-closure" unless="build.up_to_date">
+    <delete dir="${gen-src.js.dir}"/>
+  </target>
+
+  <target name="compile-test-proto-closure" depends="clean-test-output-closure, build-java" unless="build.up_to_date">
+    <java classname="com.gotcake.protobuf.Compiler" failonerror="true">
       <classpath>
         <fileset dir="${lib.java.dir}"/>
         <pathelement location="${build.java.dir}"/>
@@ -163,9 +173,135 @@
       <arg value="${src.proto.test.dir}"/>
       <arg value="${lib.proto.dir}"/>
       <arg value="--outputDir"/>
-      <arg value="${test-output.closure.dir}"/>
+      <arg value="${gen-src.js.test.dir}"/>
       <arg value="--debug"/>
     </java>
+  </target>
+
+  <target name="clean-web">
+    <delete dir="${web.js.dir}"/>
+  </target>
+
+  <target name="-check-closure-library">
+    <condition property="lib.closure.dir.exists">
+      <available file="${lib.closure.dir}" type="dir"/>
+    </condition>
+  </target>
+
+  <target name="extract-closure-library" depends="-check-closure-library" unless="lib.closure.dir.exists">
+    <mkdir dir="${web.js.dir}"/>
+    <unzip src="${lib.js.test.dir}/closure-library-master.zip" dest="${lib.closure.dir}">
+      <cutdirsmapper dirs="1" />
+    </unzip>
+  </target>
+
+  <target name="compile-test-proto-java" unless="build.up_to_date">
+    <java classname="com.gotcake.protobuf.Compiler" failonerror="true">
+      <classpath>
+        <fileset dir="${lib.java.dir}"/>
+        <pathelement location="${build.java.dir}"/>
+      </classpath>
+      <arg value="--lang"/>
+      <arg value="java"/>
+      <arg value="--input"/>
+      <arg value="${src.proto.test.dir}/**/*.proto"/>
+      <arg value="--searchDir"/>
+      <arg value="${src.proto.dir}"/>
+      <arg value="${src.proto.test.dir}"/>
+      <arg value="${lib.proto.dir}"/>
+      <arg value="--outputDir"/>
+      <arg value="${gen-src.java.test.dir}"/>
+      <arg value="--debug"/>
+    </java>
+  </target>
+
+  <target name="-check-build-up-to-date">
+    <uptodate property="build.up_to_date" targetfile="${build.dir}/.build">
+      <srcfiles dir="${src.java.dir}" includes="**/*.java"/>
+      <srcfiles dir="${src.java.test.dir}" includes="**/*.java"/>
+      <srcfiles dir="${lib.java.dir}" includes="**/*.jar"/>
+      <srcfiles dir="${lib.java.test.dir}" includes="**/*.jar"/>
+      <srcfiles dir="${src.proto.test.dir}" includes="**/*.proto"/>
+      <srcfiles dir="${src.proto.dir}" includes="**/*.proto"/>
+    </uptodate>
+  </target>
+
+
+  <target name="web-copy-js">
+    <mkdir dir="${web.js.dir}"/>
+    <delete dir="${web.js.app.dir}"/>
+    <mkdir dir="${web.js.app.dir}"/>
+    <copy todir="${web.js.app.dir}">
+      <fileset dir="${src.js.dir}"/>
+      <fileset dir="${src.js.test.dir}"/>
+      <fileset dir="${gen-src.js.test.dir}"/>
+    </copy>
+  </target>
+
+  <target name="web-gen-deps" depends="build, web-copy-js, extract-closure-library">
+    <exec dir="web" executable="python" failonerror="yes">
+      <arg value="../${lib.closure.dir}/closure/bin/calcdeps.py"/>
+      <arg value="--output_mode=deps"/>
+      <arg value="--input=js/app/gotcake/app.js"/>
+      <arg value="--path=lib/closure-library/closure/"/>
+      <arg value="--path=js/app"/>
+      <arg value="--output_file=js/deps.js"/>
+    </exec>
+  </target>
+
+  <target name="web-closure-compiler" depends="build, web-copy-js, extract-closure-library">
+    <exec executable="python" failonerror="yes">
+      <arg value="${lib.closure.dir}/closure/bin/build/closurebuilder.py"/>
+      <arg value="--input=${web.js.app.dir}/app.js"/>
+      <arg value="--root=${web.js.app.dir}"/>
+      <arg value="--root=${lib.closure.dir}"/>
+      <arg value="--output_mode=compiled"/>
+      <arg value="--compiler_jar=${lib.java.test.dir}/compiler.jar"/>
+      <arg value='--compiler_flags=--compilation_level=ADVANCED_OPTIMIZATIONS'/>
+      <arg value='--compiler_flags=--output_wrapper=(function(){%output%})();'/>
+      <arg value='--compiler_flags=--source_map_location_mapping=${web.js.app.dir}|/js/app'/>
+      <arg value='--compiler_flags=--source_map_location_mapping=${lib.closure.dir}|/lib/closure-library'/>
+      <arg value='--compiler_flags=--create_source_map=${web.js.dir}/closure-test-compiled-advanced-all.js.map'/>
+      <arg value="--output_file=${web.js.dir}/closure-test-compiled-advanced-all.js"/>
+    </exec>
+    <concat destfile="${web.js.dir}/closure-test-compiled-advanced-all.js" append="yes">
+      //# sourceMappingURL=/js/closure-test-compiled-advanced-all.js.map
+    </concat>
+  </target>
+
+  <target name="start-test-server" depends="-check-server-running" unless="server.running">
+    <mkdir dir="build"/>
+    <java classname="com.gotcake.protobuf.Server" fork="true" spawn="true">
+      <classpath>
+        <fileset dir="${lib.java.dir}"/>
+        <fileset dir="${lib.java.test.dir}"/>
+        <pathelement location="${build.java.dir}"/>
+        <pathelement location="${build.java.test.dir}"/>
+      </classpath>
+      <jvmarg value="-Dfile.encoding=UTF-8"/>
+      <arg value="${build.dir}/test_server.log"/>
+      <arg value="8080"/>
+    </java>
+  </target>
+
+  <target name="-check-server-running">
+    <available property="server.running" file=".test_server"/>
+  </target>
+
+  <target name="stop-test-server" depends="-check-server-running" if="server.running">
+    <delete file=".test_server"/>
+  </target>
+
+  <target name="test-closure-web" depends="web-gen-deps, web-closure-compiler, start-test-server">
+    <exec executable="phantomjs" failonerror="true">
+      <arg value="${lib.js.test.dir}/qunit-phantomjs-runner/runner-list.js"/>
+      <arg value="http://localhost:8080/closure-test.html"/>
+    </exec>
+    <exec executable="phantomjs" failonerror="true">
+      <arg value="${lib.js.test.dir}/qunit-phantomjs-runner/runner-list.js"/>
+      <arg value="http://localhost:8080/closure-compiled-advanced-test.html"/>
+    </exec>
+    <delete file=".test_server"/>
   </target>
 
 </project>

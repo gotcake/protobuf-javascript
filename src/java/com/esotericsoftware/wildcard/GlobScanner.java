@@ -84,6 +84,7 @@ class GlobScanner {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private void scanDir (File dir, List<Pattern> includes) {
 		if (!dir.canRead()) return;
 

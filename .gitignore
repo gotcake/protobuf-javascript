@@ -1,4 +1,9 @@
 .idea/
 build/
 dist/
-gen-src/
+tmp/
+src/gen-*/
+test/gen-*/
+web/js/
+web/lib/closure-library/
+.test_server
